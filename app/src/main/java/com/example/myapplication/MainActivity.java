@@ -2,6 +2,7 @@ package com.example.myapplication;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.widget.ArrayAdapter;
@@ -33,20 +34,18 @@ public class MainActivity extends AppCompatActivity {
         btn_update = findViewById(R.id.btn_update);
         btn_delate = findViewById(R.id.btn_delete);
         listView = findViewById(R.id.listView);
-        adapter = new ArrayList<>(this, android.R.layout.simple_list_item_1, items);
+        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, items);
         listView.setAdapter(adapter);
         dbrw = new MyDBHelper(this).getWritableDatabase();
 
-        public void onDestroy(){
-            super.onDestroy();
-            dbrw.close();
-        }
+
         btn_insert.setOnClickListener(view -> {
             if (ed_book.length() < 1 || ed_price.length() < 1)
                 Toast.makeText(MainActivity.this, "欄位請勿留空", Toast.LENGTH_SHORT).show();
             else {
                 try {
-                    dbrw.execSQL("INSERT INTO myTable(bool,price) values(?,?)", new Object[]{ed_book.getText().toString(), ed_price.getText().toString()});
+                    dbrw.execSQL("INSERT INTO myTable(book,price) values(?,?)",
+                            new Object[]{ed_book.getText().toString(), ed_price.getText().toString()});
                     Toast.makeText(MainActivity.this, "新增書名" + ed_book.getText().toString() + "價格" + ed_price.getText().toString(), Toast.LENGTH_SHORT).show();
                     ed_book.setText("");
                     ed_price.setText("");
@@ -57,12 +56,12 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        btn_insert.setOnClickListener(view -> {
+        btn_update.setOnClickListener(view -> {
             if (ed_book.length() < 1 || ed_price.length() < 1)
                 Toast.makeText(MainActivity.this, "欄位請勿留空", Toast.LENGTH_SHORT).show();
             else {
                 try {
-                    dbrw.execSQL("UPDATE myTable SET price = " + ed_price.getText().toString() + "WHERE book LIKE '" +ed_book.getText().toString() + "'");
+                    dbrw.execSQL("UPDATE myTable SET price = " + ed_price.getText().toString() + " WHERE book LIKE '" +ed_book.getText().toString() + "'");
                     Toast.makeText(MainActivity.this, "更新書名" + ed_book.getText().toString() + "價格" + ed_price.getText().toString(), Toast.LENGTH_SHORT).show();
                     ed_book.setText("");
                     ed_price.setText("");
@@ -73,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        btn_insert.setOnClickListener(view -> {
+        btn_delate.setOnClickListener(view -> {
             if (ed_book.length() < 1 )
                 Toast.makeText(MainActivity.this, "書名請勿留空", Toast.LENGTH_SHORT).show();
             else {
@@ -89,22 +88,26 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        btn_insert.setOnClickListener(view -> {
+        btn_query.setOnClickListener(view -> {
+            Cursor c;
             if (ed_book.length() < 1 )
-                Toast.makeText(MainActivity.this, "書名請勿留空", Toast.LENGTH_SHORT).show();
-            else {
-                try {
-                    dbrw.execSQL("INSERT INTO myTable(bool,price) values(?,?)", new Object[]{ed_book.getText().toString(), ed_price.getText().toString()});
-                    Toast.makeText(MainActivity.this, "新增書名" + ed_book.getText().toString() + "價格" + ed_price.getText().toString(), Toast.LENGTH_SHORT).show();
-                    ed_book.setText("");
-                    ed_price.setText("");
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    Toast.makeText(MainActivity.this, "新增失敗" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                c = dbrw.rawQuery("SELECT * FROM myTable", null);
+            else
+                c = dbrw.rawQuery("SELECT * FROM myTable WHERE book LIKE '" + ed_book.getText().toString() + "'", null);
+
+            c.moveToFirst();
+            items.clear();
+            Toast.makeText(MainActivity.this, "共有" + c.getCount() + "筆", Toast.LENGTH_SHORT).show();
+            for (int i = 0; i < c.getCount(); i++) {
+                    items.add("書籍" + c.getString(0) + "\t\t\t\t價格:" + c.getString(1));
+                    c.moveToNext();
                 }
-            }
+                adapter.notifyDataSetChanged();
+                c.close();
         });
     }
-
-
+    public void onDestroy(){
+        super.onDestroy();
+        dbrw.close();
+    }
 }
